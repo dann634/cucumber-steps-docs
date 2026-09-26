@@ -10,5 +10,6 @@
     </parent>
 
     <artifactId>cucumber-steps-docs-core</artifactId>
+    <name>Cucumber Step Documentation Core</name>
 
 </project>
