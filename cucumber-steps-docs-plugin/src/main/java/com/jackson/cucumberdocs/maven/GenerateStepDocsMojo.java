@@ -66,8 +66,6 @@ public class GenerateStepDocsMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException {
 
-        getLog().info("STARTING CUCUMBER GENERATOR");
-
         if (skip) {
             getLog().info("Cucumber step documentation generation skipped.");
             return;
@@ -83,7 +81,8 @@ public class GenerateStepDocsMojo extends AbstractMojo {
 
             List<CucumberStep> steps = scanner.scan(
                     List.of(classesDirectory.toPath(), testClassesDirectory.toPath()),
-                    classpath
+                    classpath,
+                    getLog()::debug
             );
 
             getLog().info("Found " + steps.size() + " Cucumber step definitions.");

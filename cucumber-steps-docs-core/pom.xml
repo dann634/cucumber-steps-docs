@@ -12,4 +12,11 @@
     <artifactId>cucumber-steps-docs-core</artifactId>
     <name>Cucumber Step Documentation Core</name>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>

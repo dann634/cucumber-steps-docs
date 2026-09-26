@@ -111,7 +111,7 @@ To change the output path, configure the plugin's `outputFile` parameter:
 - Cucumber Java step definitions must be on the project's test classpath. Cucumber 7 and 8 are supported.
 - The consuming project can target an older Java release if Maven runs on JDK 17+ and that project's Cucumber version supports the target runtime.
 
-The scanner discovers Cucumber annotations by their fully qualified annotation names, so the consuming project supplies and controls its own Cucumber version.
+The scanner inspects compiled main and test classes, plus dependency JARs on the test classpath. It reads bytecode annotations directly, so it does not need to load or control the consuming project's Cucumber version.
 
 ## License
 
