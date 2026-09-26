@@ -78,7 +78,7 @@ The generated report is `target/cucumber-step-documentation.html`.
 Import the annotation and add it to a Cucumber step method. The description appears beneath the expression in the generated report.
 
 ```java
-import com.jackson.cucumberdocs.StepDescription;
+import io.github.dann634.StepDescription;
 import io.cucumber.java.en.Given;
 
 @Given("a customer exists")
