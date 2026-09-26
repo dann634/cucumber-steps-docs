@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.jackson.cucumberdocs</groupId>
+        <groupId>io.github.dann634</groupId>
         <artifactId>cucumber-docs-generator</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>cucumber-steps-docs-plugin</artifactId>
@@ -14,7 +14,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.jackson.cucumberdocs</groupId>
+            <groupId>io.github.dann634</groupId>
             <artifactId>cucumber-steps-docs-core</artifactId>
         </dependency>
         <dependency>

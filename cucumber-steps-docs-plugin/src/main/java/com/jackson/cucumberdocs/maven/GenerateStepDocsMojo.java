@@ -15,8 +15,22 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Generates searchable HTML documentation from the consuming Maven project's
+ * compiled Cucumber step definitions.
+ *
+ * <p>By default, the goal runs during {@code process-test-classes} and writes
+ * {@code target/cucumber-step-documentation.html}. Set
+ * {@code cucumber.step.docs.skip} to skip generation or
+ * {@code cucumber.step.docs.failOnError} to control whether generation errors
+ * fail the build.</p>
+ */
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.PROCESS_TEST_CLASSES, threadSafe = true)
 public class GenerateStepDocsMojo extends AbstractMojo {
+
+    /** Creates the Maven goal. */
+    public GenerateStepDocsMojo() {
+    }
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
@@ -44,6 +58,11 @@ public class GenerateStepDocsMojo extends AbstractMojo {
     @Parameter(property = "cucumber.step.docs.skip", defaultValue = "false")
     private boolean skip;
 
+    /**
+     * Scans the project's main and test output directories, then writes the HTML report.
+     *
+     * @throws MojoExecutionException if generation fails and fail-on-error is enabled
+     */
     @Override
     public void execute() throws MojoExecutionException {
 

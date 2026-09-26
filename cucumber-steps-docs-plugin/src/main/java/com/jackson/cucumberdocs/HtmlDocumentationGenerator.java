@@ -8,8 +8,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Creates a standalone, searchable HTML reference for discovered Cucumber steps.
+ */
 public class HtmlDocumentationGenerator {
 
+    /** Creates a generator for standalone HTML step documentation. */
+    public HtmlDocumentationGenerator() {
+    }
+
+    /**
+     * Writes the step documentation to a UTF-8-encoded HTML file.
+     *
+     * @param steps step definitions to include in the report
+     * @param outputFile destination path for the generated HTML
+     * @throws IOException if the output directory cannot be created or the file cannot be written
+     */
     public void generate(
             List<CucumberStep> steps,
             Path outputFile

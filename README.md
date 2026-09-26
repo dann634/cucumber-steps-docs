@@ -2,9 +2,9 @@
 
 **Turn your Cucumber step definitions into searchable, tester-friendly documentation.**
 
-[![Java 25](https://img.shields.io/badge/Java-25-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Java 17+](https://img.shields.io/badge/Java-17%2B-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Maven](https://img.shields.io/badge/build-Maven-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org/)
-[![Cucumber 7](https://img.shields.io/badge/Cucumber-7.34.2-23D96C?logo=cucumber&logoColor=white)](https://cucumber.io/)
+[![Cucumber](https://img.shields.io/badge/Cucumber-7%20%7C%208-23D96C?logo=cucumber&logoColor=white)](https://cucumber.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 The Maven plugin scans compiled Cucumber step definitions and writes a standalone HTML reference. Testers can search expressions, descriptions, classes, and methods, then filter by `Given`, `When`, `Then`, `And`, or `But`.
@@ -21,7 +21,7 @@ The Maven plugin scans compiled Cucumber step definitions and writes a standalon
 
 | Module | Purpose |
 | --- | --- |
-| `cucumber-steps-docs-core` | Step model, scanner, and `@StepDescription` annotation |
+| `cucumber-steps-docs-core` | Step model, version-neutral annotation scanner, and `@StepDescription` |
 | `cucumber-steps-docs-plugin` | Maven goal that generates the HTML documentation |
 
 ## Quick start
@@ -36,7 +36,7 @@ Add the core module to the consuming project so its step definitions can compile
 
 ```xml
 <dependency>
-    <groupId>com.jackson.cucumberdocs</groupId>
+    <groupId>io.github.dann634</groupId>
     <artifactId>cucumber-steps-docs-core</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
@@ -48,7 +48,7 @@ Configure the Maven plugin in that project. It runs during `process-test-classes
 <build>
     <plugins>
         <plugin>
-            <groupId>com.jackson.cucumberdocs</groupId>
+            <groupId>io.github.dann634</groupId>
             <artifactId>cucumber-steps-docs-plugin</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <executions>
@@ -107,9 +107,11 @@ To change the output path, configure the plugin's `outputFile` parameter:
 
 ## Requirements
 
-- Java 25 or newer
-- Maven
-- Cucumber Java step definitions on the project's test classpath
+- Maven must run on JDK 17 or newer.
+- Cucumber Java step definitions must be on the project's test classpath. Cucumber 7 and 8 are supported.
+- The consuming project can target an older Java release if Maven runs on JDK 17+ and that project's Cucumber version supports the target runtime.
+
+The scanner discovers Cucumber annotations by their fully qualified annotation names, so the consuming project supplies and controls its own Cucumber version.
 
 ## License
 

@@ -1,8 +1,6 @@
 package com.jackson.cucumberdocs;
 
 
-import io.cucumber.java.en.*;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -14,10 +12,36 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Finds compiled Cucumber step definitions in the consuming project's output
+ * directories and test classpath.
+ *
+ * <p>The scanner recognizes the standard Cucumber {@code Given}, {@code When},
+ * {@code Then}, {@code And}, and {@code But} annotations by name, allowing the
+ * consuming project to use its own Cucumber version.</p>
+ */
 public class StepScanner {
 
-    private static final Class<?>[] STEP_ANNOTATIONS = {Given.class, When.class, Then.class, And.class, But.class};
+    private static final java.util.Map<String, String> STEP_ANNOTATIONS = java.util.Map.of(
+            "io.cucumber.java.en.Given", "Given",
+            "io.cucumber.java.en.When", "When",
+            "io.cucumber.java.en.Then", "Then",
+            "io.cucumber.java.en.And", "And",
+            "io.cucumber.java.en.But", "But"
+    );
 
+    /** Creates a scanner for Cucumber step definition classes. */
+    public StepScanner() {
+    }
+
+    /**
+     * Scans class directories for Cucumber step definition methods.
+     *
+     * @param classDirectories directories containing compiled project or test classes
+     * @param classpath classpath entries required to load those classes and annotations
+     * @return the discovered step definitions
+     * @throws Exception if a classpath entry, class, or step annotation cannot be loaded or inspected
+     */
     public List<CucumberStep> scan(List<Path> classDirectories, List<String> classpath) throws Exception {
 
         List<CucumberStep> steps = new ArrayList<>();
@@ -57,14 +81,13 @@ public class StepScanner {
 
         for (Method method : clazz.getDeclaredMethods()) {
 
-            for (Class<?> annotationClass : STEP_ANNOTATIONS) {
-
-                if (!method.isAnnotationPresent((Class) annotationClass)) {
+            for (Annotation annotation : method.getDeclaredAnnotations()) {
+                String keyword = STEP_ANNOTATIONS.get(annotation.annotationType().getName());
+                if (keyword == null) {
                     continue;
                 }
 
-                String keyword = getKeyword(annotationClass);
-                String expression = getExpression(method, annotationClass);
+                String expression = getExpression(method, annotation);
 
                 StepDescription description = method.getAnnotation(StepDescription.class);
 
@@ -75,36 +98,9 @@ public class StepScanner {
         }
     }
 
-    private String getKeyword(Class<?> annotationClass) {
-
-        if (annotationClass == Given.class) {
-            return "Given";
-        }
-
-        if (annotationClass == When.class) {
-            return "When";
-        }
-
-        if (annotationClass == Then.class) {
-            return "Then";
-        }
-
-        if (annotationClass == And.class) {
-            return "And";
-        }
-
-        if (annotationClass == But.class) {
-            return "But";
-        }
-
-        throw new IllegalArgumentException("Unknown Cucumber annotation: " + annotationClass);
-    }
-
-    private String getExpression(Method method, Class<?> annotationClass) {
+    private String getExpression(Method method, Annotation annotation) {
         try {
-            Annotation annotation = method.getAnnotation((Class<? extends Annotation>) annotationClass);
-
-            Method valueMethod = annotationClass.getMethod("value");
+            Method valueMethod = annotation.annotationType().getMethod("value");
 
             return (String) valueMethod.invoke(annotation);
 
