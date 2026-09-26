@@ -9,6 +9,8 @@
 
 The Maven plugin scans compiled Cucumber step definitions and writes a standalone HTML reference. Testers can search expressions, descriptions, classes, and methods, then filter by `Given`, `When`, `Then`, `And`, or `But`.
 
+<img src="cucumber-doc-example.PNG" alt="Example of the generated searchable Cucumber step documentation" width="960">
+
 ## What you get
 
 - A single HTML file that can be opened locally or shared with your team.
@@ -38,7 +40,7 @@ Add the core module to the consuming project so its step definitions can compile
 <dependency>
     <groupId>io.github.dann634</groupId>
     <artifactId>cucumber-steps-docs-core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.4</version>
 </dependency>
 ```
 
@@ -50,7 +52,7 @@ Configure the Maven plugin in that project. It runs during `process-test-classes
         <plugin>
             <groupId>io.github.dann634</groupId>
             <artifactId>cucumber-steps-docs-plugin</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.4</version>
             <executions>
                 <execution>
                     <goals>
