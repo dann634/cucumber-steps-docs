@@ -9,6 +9,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 
 import java.io.File;
@@ -25,7 +26,8 @@ import java.util.List;
  * {@code cucumber.step.docs.failOnError} to control whether generation errors
  * fail the build.</p>
  */
-@Mojo(name = "generate", defaultPhase = LifecyclePhase.PROCESS_TEST_CLASSES, threadSafe = true)
+@Mojo(name = "generate", defaultPhase = LifecyclePhase.PROCESS_TEST_CLASSES,
+        requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
 public class GenerateStepDocsMojo extends AbstractMojo {
 
     /** Creates the Maven goal. */
@@ -115,6 +117,8 @@ public class GenerateStepDocsMojo extends AbstractMojo {
         } catch (DependencyResolutionRequiredException e) {
             throw new MojoExecutionException("Failed to resolve the test classpath", e);
         }
+
+        classpath.forEach(entry -> getLog().debug("Cucumber step scan classpath entry: " + entry));
 
         return classpath;
     }
