@@ -9,20 +9,119 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Creates a standalone, searchable HTML reference for discovered Cucumber steps.
+ * Creates a searchable HTML reference and companion stylesheet for discovered Cucumber steps.
  */
 public class HtmlDocumentationGenerator {
 
-    /** Creates a generator for standalone HTML step documentation. */
+    private static final String STYLESHEET = """
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                font-family:
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                background: #f5f6f8;
+                color: #222;
+            }
+
+            header {
+                background: #24292f;
+                color: white;
+                padding: 32px 40px;
+            }
+
+            header h1 {
+                margin: 0;
+                font-size: 28px;
+            }
+
+            header p {
+                margin: 8px 0 0;
+                color: #c9d1d9;
+            }
+
+            main {
+                max-width: 1200px;
+                margin: 40px auto;
+                padding: 0 24px;
+            }
+
+            .section {
+                margin-bottom: 40px;
+            }
+
+            .section h2 {
+                margin-bottom: 16px;
+                font-size: 22px;
+            }
+
+            .step {
+                background: white;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 12px;
+                box-shadow:
+                    0 1px 3px rgba(0, 0, 0, 0.08);
+            }
+
+            .expression {
+                font-family: monospace;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            .description {
+                margin-top: 10px;
+                color: #555;
+                line-height: 1.5;
+            }
+
+            .implementation {
+                margin-top: 12px;
+                font-family: monospace;
+                font-size: 13px;
+                color: #777;
+            }
+
+            .badge {
+                display: inline-block;
+                padding: 3px 8px;
+                margin-right: 8px;
+                border-radius: 4px;
+                background: #eaeef2;
+                font-family: monospace;
+                font-size: 12px;
+            }
+
+            .empty {
+                color: #777;
+                font-style: italic;
+            }
+
+            .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+            .controls input, .controls select { min-height: 42px; padding: 8px 12px; border: 1px solid #c9d1d9; border-radius: 6px; background-color: white; font: inherit; }
+            .controls select { padding-right: 36px; }
+            .controls input { flex: 1; min-width: 220px; }
+            .step-class { color: #0969da; background: #ddf4ff; }
+            .step[hidden], .section[hidden] { display: none; }
+            """;
+
+    /** Creates a generator for HTML step documentation and its stylesheet. */
     public HtmlDocumentationGenerator() {
     }
 
     /**
-     * Writes the step documentation to a UTF-8-encoded HTML file.
+     * Writes the step documentation and its companion stylesheet as UTF-8 files.
      *
      * @param steps step definitions to include in the report
      * @param outputFile destination path for the generated HTML
-     * @throws IOException if the output directory cannot be created or the file cannot be written
+     * @throws IOException if the output directory cannot be created or either file cannot be written
      */
     public void generate(
             List<CucumberStep> steps,
@@ -31,16 +130,32 @@ public class HtmlDocumentationGenerator {
 
         Files.createDirectories(outputFile.getParent());
 
-        String html = buildHtml(steps);
+        Path stylesheetFile = stylesheetPathFor(outputFile);
+        String html = buildHtml(steps, stylesheetFile.getFileName().toString());
 
         Files.writeString(
                 outputFile,
                 html,
                 StandardCharsets.UTF_8
         );
+
+        Files.writeString(
+                stylesheetFile,
+                STYLESHEET,
+                StandardCharsets.UTF_8
+        );
     }
 
-    private String buildHtml(List<CucumberStep> steps) {
+    private Path stylesheetPathFor(Path outputFile) {
+        String fileName = outputFile.getFileName().toString();
+        int extensionIndex = fileName.lastIndexOf('.');
+        String stylesheetName = extensionIndex > 0
+                ? fileName.substring(0, extensionIndex) + ".css"
+                : fileName + ".css";
+        return outputFile.resolveSibling(stylesheetName);
+    }
+
+    private String buildHtml(List<CucumberStep> steps, String stylesheetName) {
 
         Map<String, List<CucumberStep>> grouped =
                 steps.stream()
@@ -60,105 +175,7 @@ public class HtmlDocumentationGenerator {
                     <meta name="viewport"
                           content="width=device-width, initial-scale=1.0">
                     <title>Cucumber Step Documentation</title>
-
-                    <style>
-                        * {
-                            box-sizing: border-box;
-                        }
-
-                        body {
-                            margin: 0;
-                            padding: 0;
-                            font-family:
-                                -apple-system,
-                                BlinkMacSystemFont,
-                                "Segoe UI",
-                                sans-serif;
-                            background: #f5f6f8;
-                            color: #222;
-                        }
-
-                        header {
-                            background: #24292f;
-                            color: white;
-                            padding: 32px 40px;
-                        }
-
-                        header h1 {
-                            margin: 0;
-                            font-size: 28px;
-                        }
-
-                        header p {
-                            margin: 8px 0 0;
-                            color: #c9d1d9;
-                        }
-
-                        main {
-                            max-width: 1200px;
-                            margin: 40px auto;
-                            padding: 0 24px;
-                        }
-
-                        .section {
-                            margin-bottom: 40px;
-                        }
-
-                        .section h2 {
-                            margin-bottom: 16px;
-                            font-size: 22px;
-                        }
-
-                        .step {
-                            background: white;
-                            border-radius: 8px;
-                            padding: 20px;
-                            margin-bottom: 12px;
-                            box-shadow:
-                                0 1px 3px rgba(0, 0, 0, 0.08);
-                        }
-
-                        .expression {
-                            font-family: monospace;
-                            font-size: 16px;
-                            font-weight: 600;
-                        }
-
-                        .description {
-                            margin-top: 10px;
-                            color: #555;
-                            line-height: 1.5;
-                        }
-
-                        .implementation {
-                            margin-top: 12px;
-                            font-family: monospace;
-                            font-size: 13px;
-                            color: #777;
-                        }
-
-                        .badge {
-                            display: inline-block;
-                            padding: 3px 8px;
-                            margin-right: 8px;
-                            border-radius: 4px;
-                            background: #eaeef2;
-                            font-family: monospace;
-                            font-size: 12px;
-                        }
-
-                        .empty {
-                            color: #777;
-                            font-style: italic;
-                        }
-
-                        .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-                        .controls input, .controls select { min-height: 42px; padding: 8px 12px; border: 1px solid #c9d1d9; border-radius: 6px; background-color: white; font: inherit; }
-                        .controls select { padding-right: 36px; }
-                        .controls input { flex: 1; min-width: 220px; }
-                        .step-class { color: #0969da; background: #ddf4ff; }
-                        .step[hidden], .section[hidden] { display: none; }
-                    </style>
+                    <link rel="stylesheet" href="%s">
                 </head>
 
                 <body>
@@ -177,7 +194,7 @@ public class HtmlDocumentationGenerator {
                             </select>
                         </div>
                         <p id="result-count" aria-live="polite"></p>
-                """);
+                """.formatted(escapeHtml(stylesheetName)));
 
         String[] order = {
                 "Given",

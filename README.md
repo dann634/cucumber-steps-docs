@@ -7,13 +7,13 @@
 [![Cucumber](https://img.shields.io/badge/Cucumber-7%20%7C%208-23D96C?logo=cucumber&logoColor=white)](https://cucumber.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-The Maven plugin scans compiled Cucumber step definitions and writes a standalone HTML reference. Testers can search expressions, descriptions, classes, and methods, then filter by `Given`, `When`, `Then`, `And`, or `But`.
+The Maven plugin scans compiled Cucumber step definitions and writes a searchable HTML report with a companion stylesheet. Testers can search expressions, descriptions, classes, and methods, then filter by `Given`, `When`, `Then`, `And`, or `But`.
 
 <img src="cucumber-doc-example.PNG" alt="Example of the generated searchable Cucumber step documentation" width="960">
 
 ## What you get
 
-- A single HTML file that can be opened locally or shared with your team.
+- An HTML report with a companion CSS file; keep both files together when sharing the report.
 - Searchable step expressions and descriptions.
 - Filters for Cucumber step keywords.
 - The step definition class and method shown with each step.
@@ -40,7 +40,7 @@ Add the core module to the consuming project so its step definitions can compile
 <dependency>
     <groupId>io.github.dann634</groupId>
     <artifactId>cucumber-steps-docs-core</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.6</version>
 </dependency>
 ```
 
@@ -52,7 +52,7 @@ Configure the Maven plugin in that project. It runs during `process-test-classes
         <plugin>
             <groupId>io.github.dann634</groupId>
             <artifactId>cucumber-steps-docs-plugin</artifactId>
-            <version>1.0.4</version>
+            <version>1.0.6</version>
             <executions>
                 <execution>
                     <goals>
@@ -71,7 +71,26 @@ Run the lifecycle through `process-test-classes` (or a later phase):
 mvn test
 ```
 
-The generated report is `target/cucumber-step-documentation.html`.
+The generated report is `target/cucumber-step-documentation.html`, with its stylesheet at
+`target/cucumber-step-documentation.css`.
+
+### Publish the report with Jenkins
+
+The report links to its stylesheet by a relative filename. Publish the directory containing both files with the HTML Publisher plugin:
+
+```groovy
+publishHTML(target: [
+    allowMissing: false,
+    alwaysLinkToLastBuild: true,
+    keepAll: true,
+    reportDir: 'target',
+    reportFiles: 'cucumber-step-documentation.html',
+    includes: 'cucumber-step-documentation.*',
+    reportName: 'Cucumber Step Documentation'
+])
+```
+
+The `includes` pattern archives both the HTML and CSS files. If you change the report filename, update the pattern to match both files.
 
 ## Add descriptions to steps
 
