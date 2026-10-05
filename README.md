@@ -18,6 +18,7 @@ The Maven plugin scans compiled Cucumber step definitions and writes a searchabl
 - Filters for Cucumber step keywords.
 - The step definition class and method shown with each step.
 - Optional human-written descriptions with `@StepDescription`.
+- Optional input field documentation, including whether each field is required.
 
 ## Modules
 
@@ -97,7 +98,7 @@ The `includes` pattern archives both the HTML and CSS files. If you change the r
 Import the annotation and add it to a Cucumber step method. The description appears beneath the expression in the generated report.
 
 ```java
-import io.github.dann634.StepDescription;
+import com.jackson.cucumberdocs.StepDescription;
 import io.cucumber.java.en.Given;
 
 @Given("a customer exists")
@@ -108,6 +109,57 @@ public void aCustomerExists() {
 ```
 
 Descriptions are optional. The plugin reads them from the consuming project's test classpath when generating the report.
+
+### Document Gherkin input values
+
+Set `input` to a class literal to list that class's instance fields below the step description. Fields annotated with `NotNull` or `NotBlank` are marked **Required**; other fields are marked **Optional**. The values are written directly into the generated HTML and styled with the companion CSS file.
+
+```java
+import com.jackson.cucumberdocs.StepDescription;
+import io.cucumber.java.en.When;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+class CustomerInput {
+    @NotBlank
+    private String name;
+
+    @NotNull
+    private Integer age;
+
+    private String note;
+}
+
+@When("a customer is registered")
+@StepDescription(value = "Registers a customer", input = CustomerInput.class)
+public void registerCustomer() {
+    // Register the customer
+}
+```
+
+### Document step argument values
+
+For string arguments in a step expression, add one `arguments` entry per value, in the same order as the `{string}` placeholders. Each key replaces the corresponding placeholder in the generated documentation, and enum types show their constants beneath that key. Other class types are shown by name. The Cucumber expression and Gherkin syntax are unchanged. Data-table fields continue to use `input` as described above.
+
+```java
+enum CustomerStatus {
+    NEW, ACTIVE, SUSPENDED
+}
+
+enum ContactPreference {
+    EMAIL, PHONE, POST
+}
+
+@When("a customer is updated")
+@StepDescription(value = "Updates a customer's status and contact preference",
+        arguments = {
+                @StepDescription.Argument(key = "status", type = CustomerStatus.class),
+                @StepDescription.Argument(key = "contactPreference", type = ContactPreference.class)
+        })
+public void updateCustomer() {
+    // Update the customer
+}
+```
 
 ## Configuration
 

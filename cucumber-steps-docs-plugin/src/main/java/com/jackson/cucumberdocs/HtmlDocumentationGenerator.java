@@ -89,6 +89,167 @@ public class HtmlDocumentationGenerator {
                 color: #777;
             }
 
+            .input-parameters {
+                margin-top: 18px;
+                padding-top: 16px;
+                border-top: 1px solid #eaeef2;
+            }
+
+            .input-parameters h3 {
+                margin: 0 0 4px;
+                font-size: 14px;
+                color: #344054;
+            }
+
+            .input-class {
+                margin: 0 0 12px;
+                color: #777;
+                font-family: monospace;
+                font-size: 12px;
+                overflow-wrap: anywhere;
+            }
+
+            .input-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 8px;
+                margin: 0;
+                padding: 0;
+                list-style: none;
+            }
+
+            .input-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                min-width: 0;
+                padding: 10px 12px;
+                border: 1px solid #eaeef2;
+                border-radius: 7px;
+                background: #f8fafc;
+            }
+
+            .input-name {
+                display: block;
+                color: #24292f;
+                font-family: monospace;
+                font-size: 13px;
+                font-weight: 600;
+                overflow-wrap: anywhere;
+            }
+
+            .input-type {
+                display: block;
+                margin-top: 3px;
+                color: #667085;
+                font-family: monospace;
+                font-size: 11px;
+                overflow-wrap: anywhere;
+            }
+
+            .input-requirement {
+                flex: 0 0 auto;
+                padding: 4px 7px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+
+            .input-requirement.required {
+                color: #9a3412;
+                background: #ffedd5;
+            }
+
+            .input-requirement.optional {
+                color: #475467;
+                background: #eaecf0;
+            }
+
+            .input-empty {
+                margin: 0;
+                color: #777;
+                font-size: 13px;
+                font-style: italic;
+            }
+
+            .step-arguments {
+                margin-top: 16px;
+            }
+
+            .step-arguments h3 {
+                margin: 0 0 10px;
+                font-size: 14px;
+                color: #344054;
+            }
+
+            .argument-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 8px;
+                margin: 0;
+                padding: 0;
+                list-style: none;
+            }
+
+            .argument-item {
+                min-width: 0;
+                padding: 11px 12px;
+                border: 1px solid #dbeafe;
+                border-radius: 7px;
+                background: #f8fbff;
+            }
+
+            .argument-heading {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 4px 10px;
+                margin-bottom: 8px;
+            }
+
+            .argument-key {
+                color: #1d4ed8;
+                font-family: monospace;
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            .argument-type {
+                color: #667085;
+                font-family: monospace;
+                font-size: 11px;
+                overflow-wrap: anywhere;
+            }
+
+            .argument-values {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin: 0;
+                padding: 0;
+                list-style: none;
+            }
+
+            .argument-option {
+                display: inline-block;
+                padding: 5px 9px;
+                border: 1px solid #dbeafe;
+                border-radius: 999px;
+                background: #eff6ff;
+                color: #1d4ed8;
+                font-family: monospace;
+                font-size: 12px;
+            }
+
+            .argument-empty {
+                margin: 0;
+                color: #777;
+                font-size: 13px;
+                font-style: italic;
+            }
+
             .badge {
                 display: inline-block;
                 padding: 3px 8px;
@@ -188,7 +349,7 @@ public class HtmlDocumentationGenerator {
 
                     <main>
                         <div class="controls" role="search">
-                            <input id="step-search" type="search" placeholder="Search steps, descriptions, or classes" aria-label="Search steps">
+                            <input id="step-search" type="search" placeholder="Search steps, descriptions, and input values" aria-label="Search steps">
                             <select id="keyword-filter" aria-label="Filter by step keyword">
                                 <option value="">All step keywords</option><option>Given</option><option>When</option><option>Then</option><option>And</option><option>But</option>
                             </select>
@@ -222,7 +383,12 @@ public class HtmlDocumentationGenerator {
 
                 html.append("<div class=\"step\" data-keyword=\"")
                         .append(escapeHtml(step.keyword())).append("\" data-search=\"")
-                        .append(escapeHtml((step.expression() + " " + step.description() + " " + step.className() + " " + step.methodName()).toLowerCase()))
+                        .append(escapeHtml((step.expression() + " " + step.documentedExpression() + " " + step.description() + " " + step.className() + " " + step.methodName()
+                                + " " + step.inputClassName() + " " + step.inputs().stream()
+                                .map(input -> input.name() + " " + input.type()).collect(Collectors.joining(" "))
+                                + " " + step.arguments().stream().map(argument -> argument.key() + " "
+                                + argument.className() + " " + String.join(" ", argument.values()))
+                                .collect(Collectors.joining(" "))).toLowerCase()))
                         .append("\">");
 
                 html.append("<span class=\"badge\">")
@@ -230,13 +396,61 @@ public class HtmlDocumentationGenerator {
                         .append("</span>");
 
                 html.append("<span class=\"expression\">")
-                        .append(escapeHtml(step.expression()))
+                        .append(escapeHtml(step.documentedExpression()))
                         .append("</span>");
 
                 if (!step.description().isBlank()) {
                     html.append("<div class=\"description\">")
                             .append(escapeHtml(step.description()))
                             .append("</div>");
+                }
+
+                if (!step.inputClassName().isBlank()) {
+                    html.append("<div class=\"input-parameters\">")
+                            .append("<h3>Gherkin input values</h3>")
+                            .append("<p class=\"input-class\">")
+                            .append(escapeHtml(step.inputClassName()))
+                            .append("</p>");
+                    if (step.inputs().isEmpty()) {
+                        html.append("<p class=\"input-empty\">No fields were found on this input class.</p>");
+                    } else {
+                        html.append("<ul class=\"input-list\">");
+                        step.inputs().forEach(input -> {
+                            String requirement = input.required() ? "required" : "optional";
+                            html.append("<li class=\"input-item\"><span><span class=\"input-name\">")
+                                    .append(escapeHtml(input.name()))
+                                    .append("</span><span class=\"input-type\">")
+                                    .append(escapeHtml(input.type()))
+                                    .append("</span></span><span class=\"input-requirement ")
+                                    .append(requirement)
+                                    .append("\">")
+                                    .append(input.required() ? "Required" : "Optional")
+                                    .append("</span></li>");
+                        });
+                        html.append("</ul>");
+                    }
+                    html.append("</div>");
+                }
+
+                if (!step.arguments().isEmpty()) {
+                    html.append("<div class=\"step-arguments\"><h3>Step values</h3><ul class=\"argument-list\">");
+                    step.arguments().forEach(argument -> {
+                        html.append("<li class=\"argument-item\"><div class=\"argument-heading\"><span class=\"argument-key\">{")
+                                .append(escapeHtml(argument.key()))
+                                .append("}</span><span class=\"argument-type\">")
+                                .append(escapeHtml(argument.className()))
+                                .append("</span></div>");
+                        if (argument.enumType() && !argument.values().isEmpty()) {
+                            html.append("<ul class=\"argument-values\">");
+                            argument.values().forEach(value -> html.append("<li><code class=\"argument-option\">")
+                                    .append(escapeHtml(value)).append("</code></li>"));
+                            html.append("</ul>");
+                        } else if (argument.enumType()) {
+                            html.append("<p class=\"argument-empty\">No enum constants were found on this class.</p>");
+                        }
+                        html.append("</li>");
+                    });
+                    html.append("</ul></div>");
                 }
 
                 html.append("<div class=\"implementation\">")

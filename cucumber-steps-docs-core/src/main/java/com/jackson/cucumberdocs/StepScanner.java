@@ -5,14 +5,18 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.TypePath;
 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
@@ -36,6 +40,9 @@ public class StepScanner {
             "Lio/cucumber/java/en/But;", "But"
     );
     private static final String STEP_DESCRIPTION = "Lcom/jackson/cucumberdocs/StepDescription;";
+    private static final String STEP_DESCRIPTION_ARGUMENT = "Lcom/jackson/cucumberdocs/StepDescription$Argument;";
+    private static final String NOT_NULL = "/NotNull;";
+    private static final String NOT_BLANK = "/NotBlank;";
 
     /** Creates a scanner for Cucumber step definition classes. */
     public StepScanner() {
@@ -65,26 +72,42 @@ public class StepScanner {
     public List<CucumberStep> scan(List<Path> classDirectories, List<String> classpath,
                                    Consumer<String> debugLog) throws Exception {
         List<CucumberStep> steps = new ArrayList<>();
+        Map<String, List<CucumberInput>> inputFields = new HashMap<>();
+        Map<String, List<String>> enumValues = new HashMap<>();
         Set<Path> scannedDirectories = new HashSet<>();
         Set<String> scannedClasses = new HashSet<>();
 
         for (Path directory : classDirectories) {
-            scanDirectory(directory, steps, scannedDirectories, scannedClasses, debugLog, false);
+            scanDirectory(directory, steps, inputFields, enumValues,
+                    scannedDirectories, scannedClasses, debugLog, false);
         }
 
         for (String classpathEntry : classpath) {
             Path entry = Path.of(classpathEntry);
             if (Files.isDirectory(entry)) {
-                scanDirectory(entry, steps, scannedDirectories, scannedClasses, debugLog, true);
+                scanDirectory(entry, steps, inputFields, enumValues,
+                        scannedDirectories, scannedClasses, debugLog, true);
             } else if (Files.isRegularFile(entry) && entry.toString().toLowerCase().endsWith(".jar")) {
-                scanJar(entry, steps, scannedClasses, debugLog);
+                scanJar(entry, steps, inputFields, enumValues, scannedClasses, debugLog);
             }
         }
 
-        return steps;
+        return steps.stream()
+                .map(step -> new CucumberStep(step.keyword(), step.expression(), step.description(),
+                        step.className(), step.methodName(), step.inputClassName(),
+                        inputFields.getOrDefault(step.inputClassName(), List.of()),
+                        step.arguments().stream()
+                                .map(argument -> new CucumberArgument(argument.key(), argument.className(),
+                                        enumValues.containsKey(argument.className()),
+                                        enumValues.getOrDefault(argument.className(), List.of())))
+                                .toList()))
+                .toList();
     }
 
-    private void scanDirectory(Path directory, List<CucumberStep> steps, Set<Path> scannedDirectories,
+    private void scanDirectory(Path directory, List<CucumberStep> steps,
+                               Map<String, List<CucumberInput>> inputFields,
+                               Map<String, List<String>> enumValues,
+                               Set<Path> scannedDirectories,
                                Set<String> scannedClasses, Consumer<String> debugLog,
                                boolean dependencyDirectory) throws Exception {
         Path normalizedDirectory = directory.toAbsolutePath().normalize();
@@ -105,7 +128,7 @@ public class StepScanner {
                     continue;
                 }
                 try (InputStream input = Files.newInputStream(classFile)) {
-                    readClass(input, className, steps);
+                    readClass(input, className, steps, inputFields, enumValues);
                     classCount[0]++;
                 } catch (Exception | LinkageError e) {
                     if (!dependencyDirectory) {
@@ -119,7 +142,9 @@ public class StepScanner {
         debugLog.accept("Inspected " + classCount[0] + " class files from " + normalizedDirectory);
     }
 
-    private void scanJar(Path jarPath, List<CucumberStep> steps, Set<String> scannedClasses,
+    private void scanJar(Path jarPath, List<CucumberStep> steps,
+                         Map<String, List<CucumberInput>> inputFields,
+                         Map<String, List<String>> enumValues, Set<String> scannedClasses,
                          Consumer<String> debugLog) {
         int[] classCount = {0};
         try (JarFile jar = new JarFile(jarPath.toFile())) {
@@ -131,7 +156,7 @@ public class StepScanner {
                     continue;
                 }
                 try (InputStream input = jar.getInputStream(entry)) {
-                    readClass(input, className, steps);
+                    readClass(input, className, steps, inputFields, enumValues);
                     classCount[0]++;
                 } catch (Exception | LinkageError e) {
                     debugLog.accept("Skipping dependency class " + className + " from " + jarPath + ": " + e);
@@ -143,14 +168,52 @@ public class StepScanner {
         }
     }
 
-    private void readClass(InputStream input, String classNameHint, List<CucumberStep> steps) throws Exception {
+    private void readClass(InputStream input, String classNameHint, List<CucumberStep> steps,
+                           Map<String, List<CucumberInput>> inputFields,
+                           Map<String, List<String>> enumValues) throws Exception {
         String[] className = {classNameHint};
+        boolean[] enumClass = {false};
+        List<CucumberInput> fields = new ArrayList<>();
+        List<String> constants = new ArrayList<>();
 
         new ClassReader(input).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             public void visit(int version, int access, String name, String signature,
                               String superName, String[] interfaces) {
                 className[0] = name.replace('/', '.');
+                enumClass[0] = (access & Opcodes.ACC_ENUM) != 0;
+            }
+
+            @Override
+            public org.objectweb.asm.FieldVisitor visitField(int access, String fieldName, String descriptor,
+                                                              String signature, Object value) {
+                if (enumClass[0] && (access & Opcodes.ACC_ENUM) != 0) {
+                    constants.add(fieldName);
+                    return null;
+                }
+                if ((access & (Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC)) != 0) {
+                    return null;
+                }
+                boolean[] required = {false};
+                return new org.objectweb.asm.FieldVisitor(Opcodes.ASM9) {
+                    @Override
+                    public AnnotationVisitor visitAnnotation(String annotationDescriptor, boolean visible) {
+                        markRequired(annotationDescriptor, required);
+                        return null;
+                    }
+
+                    @Override
+                    public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath,
+                                                                 String annotationDescriptor, boolean visible) {
+                        markRequired(annotationDescriptor, required);
+                        return null;
+                    }
+
+                    @Override
+                    public void visitEnd() {
+                        fields.add(new CucumberInput(fieldName, Type.getType(descriptor).getClassName(), required[0]));
+                    }
+                };
             }
 
             @Override
@@ -158,6 +221,8 @@ public class StepScanner {
                                              String signature, String[] exceptions) {
                 List<StepAnnotation> methodSteps = new ArrayList<>();
                 String[] description = {""};
+                String[] inputClassName = {""};
+                List<CucumberArgument> documentedArguments = new ArrayList<>();
 
                 return new MethodVisitor(Opcodes.ASM9) {
                     @Override
@@ -171,6 +236,10 @@ public class StepScanner {
                         return new AnnotationVisitor(Opcodes.ASM9) {
                             @Override
                             public void visit(String name, Object value) {
+                                if (isDescription && "input".equals(name) && value instanceof Type inputType) {
+                                    inputClassName[0] = inputType.getClassName();
+                                    return;
+                                }
                                 if (!(value instanceof String text) || !"value".equals(name)) {
                                     return;
                                 }
@@ -180,6 +249,39 @@ public class StepScanner {
                                     methodSteps.add(new StepAnnotation(keyword, text));
                                 }
                             }
+
+                            @Override
+                            public AnnotationVisitor visitArray(String name) {
+                                if (!isDescription || !"arguments".equals(name)) {
+                                    return null;
+                                }
+                                return new AnnotationVisitor(Opcodes.ASM9) {
+                                    @Override
+                                    public AnnotationVisitor visitAnnotation(String ignored, String descriptor) {
+                                        if (!STEP_DESCRIPTION_ARGUMENT.equals(descriptor)) {
+                                            return null;
+                                        }
+                                        String[] key = {""};
+                                        String[] className = {""};
+                                        return new AnnotationVisitor(Opcodes.ASM9) {
+                                            @Override
+                                            public void visit(String name, Object value) {
+                                                if ("key".equals(name) && value instanceof String text) {
+                                                    key[0] = text;
+                                                } else if ("type".equals(name) && value instanceof Type type) {
+                                                    className[0] = type.getClassName();
+                                                }
+                                            }
+
+                                            @Override
+                                            public void visitEnd() {
+                                                documentedArguments.add(new CucumberArgument(
+                                                        key[0], className[0], false, List.of()));
+                                            }
+                                        };
+                                    }
+                                };
+                            }
                         };
                     }
 
@@ -187,12 +289,26 @@ public class StepScanner {
                     public void visitEnd() {
                         for (StepAnnotation step : methodSteps) {
                             steps.add(new CucumberStep(step.keyword(), step.expression(), description[0],
-                                    className[0], methodName));
+                                    className[0], methodName, inputClassName[0], List.of(), documentedArguments));
                         }
                     }
                 };
             }
+
+            @Override
+            public void visitEnd() {
+                inputFields.put(className[0], List.copyOf(fields));
+                if (enumClass[0]) {
+                    enumValues.put(className[0], List.copyOf(constants));
+                }
+            }
         }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+    }
+
+    private void markRequired(String annotationDescriptor, boolean[] required) {
+        if (annotationDescriptor.endsWith(NOT_NULL) || annotationDescriptor.endsWith(NOT_BLANK)) {
+            required[0] = true;
+        }
     }
 
     private boolean isScannableClass(JarEntry entry) {

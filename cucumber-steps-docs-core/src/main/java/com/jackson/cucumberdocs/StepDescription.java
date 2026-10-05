@@ -27,4 +27,42 @@ public @interface StepDescription {
      */
     String value();
 
+    /**
+     * Returns the class whose fields describe the values used as input by this step.
+     * Fields annotated with {@code NotNull} or {@code NotBlank} are documented as required.
+     *
+     * @return the input class, or {@link Void} when the step has no documented input class
+     */
+    Class<?> input() default Void.class;
+
+    /**
+     * Returns the documented values for step arguments, in the same order as their
+     * {@code {string}} placeholders appear in the Cucumber expression. Each key is
+     * used in the generated documentation in place of the corresponding placeholder.
+     *
+     * @return the named step arguments to document
+     */
+    Argument[] arguments() default {};
+
+    /** A named step argument and the Java type used to document its value. */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({})
+    @interface Argument {
+
+        /**
+         * Returns the short name displayed in place of a {@code {string}} placeholder.
+         *
+         * @return the argument key
+         */
+        String key();
+
+        /**
+         * Returns the argument's Java type. Enum types are expanded to their constants.
+         *
+         * @return the argument type
+         */
+        Class<?> type();
+    }
+
 }
