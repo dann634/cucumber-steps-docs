@@ -139,7 +139,7 @@ public void registerCustomer() {
 
 ### Document step argument values
 
-For string arguments in a step expression, add one `arguments` entry per value, in the same order as the `{string}` placeholders. Each key replaces the corresponding placeholder in the generated documentation, and enum types show their constants beneath that key. Other class types are shown by name. The Cucumber expression and Gherkin syntax are unchanged. Data-table fields continue to use `input` as described above.
+For values in a step expression, add one `arguments` entry per placeholder, in positional order. The first entry labels the first placeholder, the second labels the second, and so on, regardless of the Cucumber parameter type. Each key replaces that placeholder in the generated documentation. Enum types show their constants beneath the key; other class types are shown by name. The Cucumber expression and Gherkin syntax are unchanged. Data-table fields continue to use `input` as described above.
 
 ```java
 enum CustomerStatus {

@@ -37,7 +37,7 @@ public @interface StepDescription {
 
     /**
      * Returns the documented values for step arguments, in the same order as their
-     * {@code {string}} placeholders appear in the Cucumber expression. Each key is
+     * parameter placeholders appear in the Cucumber expression. Each key is
      * used in the generated documentation in place of the corresponding placeholder.
      *
      * @return the named step arguments to document
@@ -51,7 +51,7 @@ public @interface StepDescription {
     @interface Argument {
 
         /**
-         * Returns the short name displayed in place of a {@code {string}} placeholder.
+         * Returns the short name displayed in place of a parameter placeholder.
          *
          * @return the argument key
          */

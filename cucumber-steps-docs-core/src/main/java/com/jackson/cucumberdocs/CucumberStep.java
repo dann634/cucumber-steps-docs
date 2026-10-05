@@ -63,24 +63,54 @@ public record CucumberStep(
     }
 
     /**
-     * Returns the expression with documented keys substituted for successive
-     * {@code {string}} placeholders.
+     * Returns the expression with documented keys substituted for successive parameter
+     * placeholders.
      *
      * @return the display expression for the generated documentation
      */
     public String documentedExpression() {
-        String result = expression;
-        int searchFrom = 0;
-        for (CucumberArgument argument : arguments) {
-            int placeholder = result.indexOf("{string}", searchFrom);
-            if (placeholder < 0) {
+        if (expression == null || arguments.isEmpty()) {
+            return expression == null ? "" : expression;
+        }
+
+        StringBuilder result = new StringBuilder(expression.length());
+        int copiedThrough = 0;
+        int scanFrom = 0;
+        int argumentIndex = 0;
+        while (argumentIndex < arguments.size()) {
+            int open = expression.indexOf('{', scanFrom);
+            if (open < 0) {
                 break;
             }
-            String replacement = "{" + argument.key() + "}";
-            result = result.substring(0, placeholder) + replacement
-                    + result.substring(placeholder + "{string}".length());
-            searchFrom = placeholder + replacement.length();
+            if (isEscaped(expression, open)) {
+                scanFrom = open + 1;
+                continue;
+            }
+
+            int close = expression.indexOf('}', open + 1);
+            if (close < 0) {
+                break;
+            }
+            String parameterType = expression.substring(open + 1, close);
+            if (parameterType.indexOf('{') >= 0 || parameterType.chars().anyMatch(Character::isWhitespace)) {
+                scanFrom = open + 1;
+                continue;
+            }
+
+            result.append(expression, copiedThrough, open)
+                    .append('{').append(arguments.get(argumentIndex).key()).append('}');
+            copiedThrough = close + 1;
+            scanFrom = copiedThrough;
+            argumentIndex++;
         }
-        return result;
+        return result.append(expression.substring(copiedThrough)).toString();
+    }
+
+    private boolean isEscaped(String text, int index) {
+        int backslashes = 0;
+        for (int i = index - 1; i >= 0 && text.charAt(i) == '\\'; i--) {
+            backslashes++;
+        }
+        return backslashes % 2 != 0;
     }
 }
