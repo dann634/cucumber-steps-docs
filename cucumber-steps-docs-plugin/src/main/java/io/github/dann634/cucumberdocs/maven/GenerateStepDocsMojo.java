@@ -1,8 +1,8 @@
-package com.jackson.cucumberdocs.maven;
+package io.github.dann634.cucumberdocs.maven;
 
-import com.jackson.cucumberdocs.CucumberStep;
-import com.jackson.cucumberdocs.HtmlDocumentationGenerator;
-import com.jackson.cucumberdocs.StepScanner;
+import io.github.dann634.cucumberdocs.CucumberStep;
+import io.github.dann634.cucumberdocs.HtmlDocumentationGenerator;
+import io.github.dann634.cucumberdocs.StepScanner;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;

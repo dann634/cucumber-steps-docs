@@ -98,7 +98,7 @@ The `includes` pattern archives both the HTML and CSS files. If you change the r
 Import the annotation and add it to a Cucumber step method. The description appears beneath the expression in the generated report.
 
 ```java
-import com.jackson.cucumberdocs.StepDescription;
+import io.github.dann634.cucumberdocs.StepDescription;
 import io.cucumber.java.en.Given;
 
 @Given("a customer exists")
@@ -112,19 +112,22 @@ Descriptions are optional. The plugin reads them from the consuming project's te
 
 ### Document Gherkin input values
 
-Set `input` to a class literal to list that class's instance fields below the step description. Fields annotated with `NotNull` or `NotBlank` are marked **Required**; other fields are marked **Optional**. The values are written directly into the generated HTML and styled with the companion CSS file.
+Set `input` to a class literal to list that class's instance fields below the step description. Add `@InputColumn` to a field to show the data-table column name users should provide; without it, the Java field name is shown. Fields annotated with `NotNull` or `NotBlank` are marked **Required**; other fields are marked **Optional**. The values are written directly into the generated HTML and styled with the companion CSS file.
 
 ```java
-import com.jackson.cucumberdocs.StepDescription;
+import io.github.dann634.cucumberdocs.InputColumn;
+import io.github.dann634.cucumberdocs.StepDescription;
 import io.cucumber.java.en.When;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 class CustomerInput {
     @NotBlank
+    @InputColumn("customer_name")
     private String name;
 
     @NotNull
+    @InputColumn("customer_age")
     private Integer age;
 
     private String note;

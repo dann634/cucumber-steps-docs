@@ -1,4 +1,4 @@
-package com.jackson.cucumberdocs;
+package io.github.dann634.cucumberdocs;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

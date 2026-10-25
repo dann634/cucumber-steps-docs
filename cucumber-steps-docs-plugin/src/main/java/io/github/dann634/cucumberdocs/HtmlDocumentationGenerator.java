@@ -1,4 +1,4 @@
-package com.jackson.cucumberdocs;
+package io.github.dann634.cucumberdocs;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -385,7 +385,8 @@ public class HtmlDocumentationGenerator {
                         .append(escapeHtml(step.keyword())).append("\" data-search=\"")
                         .append(escapeHtml((step.expression() + " " + step.documentedExpression() + " " + step.description() + " " + step.className() + " " + step.methodName()
                                 + " " + step.inputClassName() + " " + step.inputs().stream()
-                                .map(input -> input.name() + " " + input.type()).collect(Collectors.joining(" "))
+                                .map(input -> input.name() + " " + input.columnName() + " " + input.type())
+                                .collect(Collectors.joining(" "))
                                 + " " + step.arguments().stream().map(argument -> argument.key() + " "
                                 + argument.className() + " " + String.join(" ", argument.values()))
                                 .collect(Collectors.joining(" "))).toLowerCase()))
@@ -417,8 +418,9 @@ public class HtmlDocumentationGenerator {
                         html.append("<ul class=\"input-list\">");
                         step.inputs().forEach(input -> {
                             String requirement = input.required() ? "required" : "optional";
+                            String columnName = input.columnName().isBlank() ? input.name() : input.columnName();
                             html.append("<li class=\"input-item\"><span><span class=\"input-name\">")
-                                    .append(escapeHtml(input.name()))
+                                    .append(escapeHtml(columnName))
                                     .append("</span><span class=\"input-type\">")
                                     .append(escapeHtml(input.type()))
                                     .append("</span></span><span class=\"input-requirement ")

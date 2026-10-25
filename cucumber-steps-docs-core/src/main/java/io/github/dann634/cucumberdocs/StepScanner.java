@@ -1,4 +1,4 @@
-package com.jackson.cucumberdocs;
+package io.github.dann634.cucumberdocs;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -39,8 +39,18 @@ public class StepScanner {
             "Lio/cucumber/java/en/And;", "And",
             "Lio/cucumber/java/en/But;", "But"
     );
-    private static final String STEP_DESCRIPTION = "Lcom/jackson/cucumberdocs/StepDescription;";
-    private static final String STEP_DESCRIPTION_ARGUMENT = "Lcom/jackson/cucumberdocs/StepDescription$Argument;";
+    private static final Set<String> STEP_DESCRIPTIONS = Set.of(
+            "Lio/github/dann634/cucumberdocs/StepDescription;",
+            "Lcom/jackson/cucumberdocs/StepDescription;"
+    );
+    private static final Set<String> STEP_DESCRIPTION_ARGUMENTS = Set.of(
+            "Lio/github/dann634/cucumberdocs/StepDescription$Argument;",
+            "Lcom/jackson/cucumberdocs/StepDescription$Argument;"
+    );
+    private static final Set<String> INPUT_COLUMNS = Set.of(
+            "Lio/github/dann634/cucumberdocs/InputColumn;",
+            "Lcom/jackson/cucumberdocs/InputColumn;"
+    );
     private static final String NOT_NULL = "/NotNull;";
     private static final String NOT_BLANK = "/NotBlank;";
 
@@ -195,10 +205,21 @@ public class StepScanner {
                     return null;
                 }
                 boolean[] required = {false};
+                String[] columnName = {""};
                 return new org.objectweb.asm.FieldVisitor(Opcodes.ASM9) {
                     @Override
                     public AnnotationVisitor visitAnnotation(String annotationDescriptor, boolean visible) {
                         markRequired(annotationDescriptor, required);
+                        if (INPUT_COLUMNS.contains(annotationDescriptor)) {
+                            return new AnnotationVisitor(Opcodes.ASM9) {
+                                @Override
+                                public void visit(String name, Object value) {
+                                    if ("value".equals(name) && value instanceof String text) {
+                                        columnName[0] = text;
+                                    }
+                                }
+                            };
+                        }
                         return null;
                     }
 
@@ -211,7 +232,8 @@ public class StepScanner {
 
                     @Override
                     public void visitEnd() {
-                        fields.add(new CucumberInput(fieldName, Type.getType(descriptor).getClassName(), required[0]));
+                        fields.add(new CucumberInput(fieldName, columnName[0],
+                                Type.getType(descriptor).getClassName(), required[0]));
                     }
                 };
             }
@@ -228,7 +250,7 @@ public class StepScanner {
                     @Override
                     public AnnotationVisitor visitAnnotation(String annotationDescriptor, boolean visible) {
                         String keyword = STEP_ANNOTATIONS.get(annotationDescriptor);
-                        boolean isDescription = STEP_DESCRIPTION.equals(annotationDescriptor);
+                        boolean isDescription = STEP_DESCRIPTIONS.contains(annotationDescriptor);
                         if (keyword == null && !isDescription) {
                             return null;
                         }
@@ -258,7 +280,7 @@ public class StepScanner {
                                 return new AnnotationVisitor(Opcodes.ASM9) {
                                     @Override
                                     public AnnotationVisitor visitAnnotation(String ignored, String descriptor) {
-                                        if (!STEP_DESCRIPTION_ARGUMENT.equals(descriptor)) {
+                                        if (!STEP_DESCRIPTION_ARGUMENTS.contains(descriptor)) {
                                             return null;
                                         }
                                         String[] key = {""};
